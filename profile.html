@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户中心 - 优选商城</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 头部导航 -->
+    <header>
+        <nav class="container">
+            <a href="index.html" class="logo">优选商城</a>
+            <ul class="nav-links">
+                <li><a href="index.html">首页</a></li>
+                <li><a href="cart.html">购物车</a></li>
+                <li><a href="profile.html" class="active">用户中心</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- 主要内容 -->
+    <main class="container">
+        <h1>用户中心</h1>
+        
+        <!-- 未登录状态 -->
+        <div id="loginPrompt" class="login-prompt" style="display: none;">
+            <div class="error">
+                <h3>请先登录</h3>
+                <p>您需要登录后才能访问用户中心</p>
+                <button class="btn btn-primary" onclick="showLoginModal()">立即登录</button>
+                <button class="btn btn-secondary" onclick="window.location.href='index.html'">返回首页</button>
+            </div>
+        </div>
+
+        <!-- 已登录状态 -->
+        <div id="profileContent" style="display: none;">
+            <!-- 用户资料 -->
+            <section class="user-profile">
+                <div class="profile-header">
+                    <div class="avatar" id="userAvatar">
+                        <span id="avatarText">U</span>
+                    </div>
+                    <div class="user-info">
+                        <h2 id="userName">用户名</h2>
+                        <p id="userEmail">email@example.com</p>
+                        <p id="userPhone">未设置手机号</p>
+                        <button class="btn btn-secondary" onclick="showEditProfileModal()">编辑资料</button>
+                    </div>
+                </div>
+
+                <!-- 用户统计 -->
+                <div class="user-stats">
+                    <div class="stat-item">
+                        <h3 id="totalOrders">0</h3>
+                        <p>总订单数</p>
+                    </div>
+                    <div class="stat-item">
+                        <h3 id="totalSpent">¥0.00</h3>
+                        <p>消费金额</p>
+                    </div>
+                    <div class="stat-item">
+                        <h3 id="memberSince">-</h3>
+                        <p>注册时间</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 选项卡导航 -->
+            <div class="tabs-container">
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="orders">我的订单</button>
+                    <button class="tab-btn" data-tab="settings">账户设置</button>
+                    <button class="tab-btn" data-tab="addresses">收货地址</button>
+                </div>
+
+                <!-- 我的订单 -->
+                <div id="orders" class="tab-content active">
+                    <div class="section-header">
+                        <h3>我的订单</h3>
+                        <select id="orderFilter" class="form-input" style="width: auto;">
+                            <option value="all">全部订单</option>
+                            <option value="pending">待处理</option>
+                            <option value="processing">处理中</option>
+                            <option value="shipped">已发货</option>
+                            <option value="delivered">已送达</option>
+                            <option value="cancelled">已取消</option>
+                        </select>
+                    </div>
+                    
+                    <div id="ordersContainer">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            <p>加载订单中...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 账户设置 -->
+                <div id="settings" class="tab-content">
+                    <h3>账户设置</h3>
+                    <div class="settings-grid">
+                        <div class="setting-item">
+                            <h4>个人信息</h4>
+                            <p>更新您的基本信息</p>
+                            <button class="btn btn-secondary" onclick="showEditProfileModal()">编辑资料</button>
+                        </div>
+                        <div class="setting-item">
+                            <h4>密码安全</h4>
+                            <p>修改登录密码</p>
+                            <button class="btn btn-secondary" onclick="showPasswordModal()">修改密码</button>
+                        </div>
+                        <div class="setting-item">
+                            <h4>通知设置</h4>
+                            <p>管理邮件和短信通知</p>
+                            <button class="btn btn-secondary" onclick="showNotificationModal()">通知设置</button>
+                        </div>
+                        <div class="setting-item">
+                            <h4>隐私设置</h4>
+                            <p>管理您的隐私偏好</p>
+                            <button class="btn btn-secondary" onclick="showPrivacyModal()">隐私设置</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 收货地址 -->
+                <div id="addresses" class="tab-content">
+                    <div class="section-header">
+                        <h3>收货地址</h3>
+                        <button class="btn btn-primary" onclick="showAddAddressModal()">添加地址</button>
+                    </div>
+                    
+                    <div id="addressesContainer">
+                        <div class="loading">
+                            <p>加载地址中...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 编辑资料模态框 -->
+    <div id="editProfileModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEditProfileModal()">&times;</span>
+            <h2>编辑个人资料</h2>
+            
+            <form id="editProfileForm">
+                <div class="form-group">
+                    <label for="editUsername" class="form-label">用户名</label>
+                    <input type="text" id="editUsername" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editFullName" class="form-label">姓名</label>
+                    <input type="text" id="editFullName" class="form-input">
+                </div>
+                
+                <div class="form-group">
+                    <label for="editPhone" class="form-label">手机号</label>
+                    <input type="tel" id="editPhone" class="form-input">
+                </div>
+                
+                <div class="form-group">
+                    <label for="editAddress" class="form-label">地址</label>
+                    <textarea id="editAddress" class="form-input" rows="3"></textarea>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditProfileModal()">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase.js"></script>
+    <script src="js/utils.js"></script>
+    <script>
+        let currentUser = null;
+        let userOrders = [];
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', async function() {
+            await utils.initializePage();
+            
+            // 检查登录状态
+            if (!utils.authUtils.checkAuth()) {
+                document.getElementById('loginPrompt').style.display = 'block';
+                return;
+            }
+
+            currentUser = utils.authUtils.getCurrentUser();
+            await loadUserProfile();
+            await loadUserOrders();
+            setupEventListeners();
+        });
+
+        // 设置事件监听器
+        function setupEventListeners() {
+            // 选项卡切换
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const tabName = this.dataset.tab;
+                    
+                    // 更新按钮状态
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // 更新内容显示
+                    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                    document.getElementById(tabName).classList.add('active');
+                });
+            });
+
+            // 订单筛选
+            document.getElementById('orderFilter').addEventListener('change', function() {
+                filterOrders(this.value);
+            });
+
+            // 编辑资料表单提交
+            document.getElementById('editProfileForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await saveUserProfile();
+            });
+        }
+
+        // 加载用户资料
+        async function loadUserProfile() {
+            document.getElementById('profileContent').style.display = 'block';
+            
+            // 显示用户基本信息（简化处理，实际项目中应该从数据库获取）
+            const email = currentUser?.email || 'email@example.com';
+            const username = email.split('@')[0];
+            
+            document.getElementById('userName').textContent = username;
+            document.getElementById('userEmail').textContent = email;
+            document.getElementById('avatarText').textContent = username.charAt(0).toUpperCase();
+            
+            // 显示注册时间
+            if (currentUser?.created_at) {
+                document.getElementById('memberSince').textContent = utils.formatDate(currentUser.created_at);
+            }
+
+            // 加载用户统计
+            await loadUserStats();
+        }
+
+        // 加载用户统计
+        async function loadUserStats() {
+            try {
+                userOrders = await window.supabaseService.getUserOrders();
+                
+                const totalOrders = userOrders.length;
+                const totalSpent = userOrders.reduce((total, order) => total + (order.total_amount || 0), 0);
+                
+                document.getElementById('totalOrders').textContent = totalOrders;
+                document.getElementById('totalSpent').textContent = utils.formatPrice(totalSpent);
+            } catch (error) {
+                console.error('加载用户统计失败:', error);
+            }
+        }
+
+        // 加载用户订单
+        async function loadUserOrders() {
+            try {
+                userOrders = await window.supabaseService.getUserOrders();
+                displayOrders(userOrders);
+            } catch (error) {
+                console.error('加载订单失败:', error);
+                document.getElementById('ordersContainer').innerHTML = '<p>加载订单失败</p>';
+            }
+        }
+
+        // 显示订单列表
+        function displayOrders(orders) {
+            const container = document.getElementById('ordersContainer');
+            
+            if (!orders || orders.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <p>暂无订单</p>
+                        <button class="btn btn-primary" onclick="window.location.href='index.html'">去购物</button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = orders.map(order => `
+                <div class="order-item">
+                    <div class="order-header">
+                        <div>
+                            <strong>订单号：${order.id.substring(0, 8)}...</strong>
+                            <span class="order-status ${utils.getOrderStatusClass(order.status)}">
+                                ${utils.getOrderStatusText(order.status)}
+                            </span>
+                        </div>
+                        <div class="order-date">
+                            ${utils.formatDate(order.created_at)}
+                        </div>
+                    </div>
+                    
+                    <div class="order-items">
+                        ${order.order_items.map(item => `
+                            <div class="order-item-row">
+                                <img src="${item.products.image_url || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=50'}" 
+                                     alt="${item.products.name}" 
+                                     width="50" height="50">
+                                <div class="order-item-info">
+                                    <h4>${item.products.name}</h4>
+                                    <p>数量：${item.quantity} | 单价：${utils.formatPrice(item.unit_price)}</p>
+                                </div>
+                                <div class="order-item-total">
+                                    ${utils.formatPrice(item.total_price)}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div class="order-footer">
+                        <div class="order-total">
+                            共 ${order.order_items.reduce((sum, item) => sum + item.quantity, 0)} 件商品
+                            <strong>订单总额：${utils.formatPrice(order.total_amount)}</strong>
+                        </div>
+                        <div class="order-actions">
+                            ${order.status === 'pending' ? '<button class="btn btn-secondary" onclick="cancelOrder(\'' + order.id + '\')">取消订单</button>' : ''}
+                            <button class="btn btn-primary" onclick="viewOrderDetail('${order.id}')">查看详情</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 筛选订单
+        function filterOrders(status) {
+            if (status === 'all') {
+                displayOrders(userOrders);
+            } else {
+                const filteredOrders = userOrders.filter(order => order.status === status);
+                displayOrders(filteredOrders);
+            }
+        }
+
+        // 取消订单
+        async function cancelOrder(orderId) {
+            utils.confirmAction('确定要取消这个订单吗？', async () => {
+                try {
+                    // 这里应该调用取消订单的API
+                    // await window.supabaseService.cancelOrder(orderId);
+                    utils.showSuccess('订单已取消');
+                    await loadUserOrders();
+                } catch (error) {
+                    utils.showError('取消订单失败: ' + error.message);
+                }
+            });
+        }
+
+        // 查看订单详情
+        function viewOrderDetail(orderId) {
+            // 这里可以跳转到订单详情页面或显示详情模态框
+            alert('订单详情功能待开发，订单ID: ' + orderId.substring(0, 8));
+        }
+
+        // 显示编辑资料模态框
+        function showEditProfileModal() {
+            // 填充当前信息
+            const username = document.getElementById('userName').textContent;
+            document.getElementById('editUsername').value = username;
+            document.getElementById('editFullName').value = '';
+            document.getElementById('editPhone').value = document.getElementById('userPhone').textContent;
+            document.getElementById('editAddress').value = '';
+            
+            document.getElementById('editProfileModal').style.display = 'block';
+        }
+
+        // 关闭编辑资料模态框
+        function closeEditProfileModal() {
+            document.getElementById('editProfileModal').style.display = 'none';
+            document.getElementById('editProfileForm').reset();
+        }
+
+        // 保存用户资料
+        async function saveUserProfile() {
+            const profileData = {
+                username: document.getElementById('editUsername').value,
+                full_name: document.getElementById('editFullName').value,
+                phone: document.getElementById('editPhone').value,
+                address: document.getElementById('editAddress').value
+            };
+
+            try {
+                await window.supabaseService.updateUserProfile(profileData);
+                utils.showSuccess('个人资料已更新');
+                closeEditProfileModal();
+                await loadUserProfile(); // 重新加载用户信息
+            } catch (error) {
+                utils.showError('更新失败: ' + error.message);
+            }
+        }
+
+        // 显示登录模态框（简化处理）
+        function showLoginModal() {
+            alert('请使用 Supabase Auth 进行登录。实际项目中应该实现完整的登录流程。');
+        }
+
+        // 其他模态框（简化处理）
+        function showPasswordModal() {
+            alert('修改密码功能待开发');
+        }
+
+        function showNotificationModal() {
+            alert('通知设置功能待开发');
+        }
+
+        function showPrivacyModal() {
+            alert('隐私设置功能待开发');
+        }
+
+        function showAddAddressModal() {
+            alert('添加地址功能待开发');
+        }
+
+        // 点击模态框外部关闭
+        window.onclick = function(event) {
+            const editProfileModal = document.getElementById('editProfileModal');
+            if (event.target === editProfileModal) {
+                closeEditProfileModal();
+            }
+        }
+    </script>
+
+    <style>
+        /* 用户中心特有样式 */
+        .login-prompt {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .login-prompt .error {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .nav-links .active {
+            color: #e74c3c;
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .user-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid #eee;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .stat-item h3 {
+            font-size: 1.5rem;
+            color: #e74c3c;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-item p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .tabs-container {
+            margin-top: 3rem;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #eee;
+            margin-bottom: 2rem;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab-btn:hover {
+            background: #f8f9fa;
+        }
+
+        .tab-btn.active {
+            color: #e74c3c;
+            border-bottom-color: #e74c3c;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .order-item {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            background: white;
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .order-header > div:first-child {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .order-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .order-date {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .order-items {
+            margin-bottom: 1rem;
+        }
+
+        .order-item-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .order-item-info {
+            flex: 1;
+        }
+
+        .order-item-info h4 {
+            margin-bottom: 0.25rem;
+        }
+
+        .order-item-info p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .order-item-total {
+            font-weight: bold;
+            color: #e74c3c;
+        }
+
+        .order-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+        }
+
+        .order-total strong {
+            color: #e74c3c;
+            margin-left: 1rem;
+        }
+
+        .order-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .setting-item {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid #eee;
+            text-align: center;
+        }
+
+        .setting-item h4 {
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .setting-item p {
+            color: #666;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+
+        .modal-content {
+            max-width: 500px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 1.5rem;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .profile-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .user-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .tabs {
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+
+            .tab-btn {
+                flex-shrink: 0;
+            }
+
+            .order-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .order-footer {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .order-actions {
+                width: 100%;
+            }
+
+            .order-actions .btn {
+                flex: 1;
+            }
+
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+        }
+    </style>
+</body>
+</html>

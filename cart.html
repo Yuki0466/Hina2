@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>购物车 - 优选商城</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 头部导航 -->
+    <header>
+        <nav class="container">
+            <a href="index.html" class="logo">优选商城</a>
+            <ul class="nav-links">
+                <li><a href="index.html">首页</a></li>
+                <li><a href="cart.html" class="active">购物车</a></li>
+                <li><a href="profile.html">用户中心</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- 主要内容 -->
+    <main class="container">
+        <h1>购物车</h1>
+        
+        <!-- 未登录状态 -->
+        <div id="loginPrompt" class="login-prompt" style="display: none;">
+            <div class="error">
+                <h3>请先登录</h3>
+                <p>您需要登录后才能查看购物车</p>
+                <button class="btn btn-primary" onclick="showLoginModal()">立即登录</button>
+                <button class="btn btn-secondary" onclick="window.location.href='index.html'">返回首页</button>
+            </div>
+        </div>
+
+        <!-- 空购物车状态 -->
+        <div id="emptyCart" class="empty-cart" style="display: none;">
+            <div class="empty-cart-content">
+                <svg width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3">
+                    <path d="M9 2L6 9H22L19 2H9Z"/>
+                    <path d="M6 9H6.01"/>
+                    <path d="M22 9H21.99"/>
+                    <path d="M6 9V20C6 21.1 6.9 22 8 22H16C17.1 22 18 21.1 18 20V9"/>
+                    <path d="M8 22H16"/>
+                </svg>
+                <h3>购物车是空的</h3>
+                <p>快去挑选心仪的商品吧！</p>
+                <button class="btn btn-primary" onclick="window.location.href='index.html'">去购物</button>
+            </div>
+        </div>
+
+        <!-- 购物车内容 -->
+        <div id="cartContent" style="display: none;">
+            <div class="cart-layout">
+                <!-- 购物车商品列表 -->
+                <div class="cart-items-section">
+                    <div class="cart-items" id="cartItemsContainer">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            <p>加载购物车中...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 购物车摘要 -->
+                <div class="cart-summary-section">
+                    <div class="cart-summary">
+                        <h3>订单摘要</h3>
+                        <div class="summary-row">
+                            <span>商品总数：</span>
+                            <span id="totalItems">0</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>商品总价：</span>
+                            <span id="subtotal">¥0.00</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>运费：</span>
+                            <span id="shipping">¥0.00</span>
+                        </div>
+                        <div class="summary-row total">
+                            <span>总计：</span>
+                            <span id="total">¥0.00</span>
+                        </div>
+                        
+                        <button class="btn btn-primary checkout-btn" onclick="proceedToCheckout()">
+                            结算
+                        </button>
+                        
+                        <button class="btn btn-secondary" onclick="window.location.href='index.html'">
+                            继续购物
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 推荐商品 -->
+        <section id="recommendedProducts" class="recommended-products" style="display: none;">
+            <h2>为您推荐</h2>
+            <div id="recommendedContainer" class="products-grid">
+                <div class="loading">
+                    <p>加载推荐商品中...</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 结算模态框 -->
+    <div id="checkoutModal" class="modal">
+        <div class="modal-content checkout-modal">
+            <span class="close" onclick="closeCheckoutModal()">&times;</span>
+            <h2>确认订单</h2>
+            
+            <form id="checkoutForm">
+                <div class="form-group">
+                    <label for="fullName" class="form-label">收货人姓名</label>
+                    <input type="text" id="fullName" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="phone" class="form-label">联系电话</label>
+                    <input type="tel" id="phone" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="address" class="form-label">收货地址</label>
+                    <textarea id="address" class="form-input" rows="3" required placeholder="请输入详细收货地址"></textarea>
+                </div>
+                
+                <div class="order-summary">
+                    <h4>订单信息</h4>
+                    <div class="summary-row">
+                        <span>商品数量：</span>
+                        <span id="checkoutItems">0</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>订单总额：</span>
+                        <span id="checkoutTotal">¥0.00</span>
+                    </div>
+                </div>
+                
+                <div class="checkout-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeCheckoutModal()">取消</button>
+                    <button type="submit" class="btn btn-primary">确认下单</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase.js"></script>
+    <script src="js/utils.js"></script>
+    <script>
+        let cartItems = [];
+        let totalPrice = 0;
+        let totalItems = 0;
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', async function() {
+            await utils.initializePage();
+            await loadCart();
+        });
+
+        // 加载购物车
+        async function loadCart() {
+            // 检查登录状态
+            if (!utils.authUtils.checkAuth()) {
+                document.getElementById('loginPrompt').style.display = 'block';
+                return;
+            }
+
+            try {
+                cartItems = await window.supabaseService.getCart();
+                
+                if (cartItems.length === 0) {
+                    showEmptyCart();
+                } else {
+                    displayCartItems();
+                    updateSummary();
+                    loadRecommendedProducts();
+                }
+            } catch (error) {
+                console.error('加载购物车失败:', error);
+                utils.showError('加载购物车失败: ' + error.message);
+            }
+        }
+
+        // 显示空购物车
+        function showEmptyCart() {
+            document.getElementById('emptyCart').style.display = 'block';
+        }
+
+        // 显示购物车商品
+        function displayCartItems() {
+            document.getElementById('cartContent').style.display = 'block';
+            const container = document.getElementById('cartItemsContainer');
+            
+            container.innerHTML = cartItems.map(item => `
+                <div class="cart-item">
+                    <img src="${item.products.image_url || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=100'}" 
+                         alt="${item.products.name}" 
+                         class="cart-item-image"
+                         onerror="this.src='https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=100'">
+                    
+                    <div class="cart-item-info">
+                        <h3 class="cart-item-name">${item.products.name}</h3>
+                        <p class="cart-item-price">${utils.formatPrice(item.products.price)}</p>
+                        <p class="cart-item-category">${item.products.category}</p>
+                    </div>
+                    
+                    <div class="cart-item-quantity">
+                        <button class="quantity-btn" onclick="updateQuantity('${item.id}', ${item.quantity - 1})" 
+                                ${item.quantity <= 1 ? 'disabled' : ''}>-</button>
+                        <input type="number" value="${item.quantity}" min="1" max="${item.products.stock_count}" 
+                               onchange="setQuantity('${item.id}', this.value)" class="quantity-input">
+                        <button class="quantity-btn" onclick="updateQuantity('${item.id}', ${item.quantity + 1})"
+                                ${item.quantity >= item.products.stock_count ? 'disabled' : ''}>+</button>
+                    </div>
+                    
+                    <div class="cart-item-total">
+                        <strong>${utils.formatPrice(item.products.price * item.quantity)}</strong>
+                    </div>
+                    
+                    <button class="btn btn-secondary remove-btn" onclick="removeFromCart('${item.id}')">
+                        删除
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // 更新商品数量
+        async function updateQuantity(cartItemId, newQuantity) {
+            if (newQuantity < 1) return;
+            
+            const item = cartItems.find(item => item.id === cartItemId);
+            if (!item) return;
+            
+            if (newQuantity > item.products.stock_count) {
+                utils.showError(`库存仅剩 ${item.products.stock_count} 件`);
+                return;
+            }
+
+            try {
+                await window.supabaseService.updateCartItemQuantity(cartItemId, newQuantity);
+                
+                // 更新本地数据
+                item.quantity = newQuantity;
+                displayCartItems();
+                updateSummary();
+                await utils.cartUtils.updateCartIcon();
+            } catch (error) {
+                console.error('更新数量失败:', error);
+                utils.showError('更新数量失败');
+            }
+        }
+
+        // 设置商品数量
+        function setQuantity(cartItemId, value) {
+            const quantity = parseInt(value);
+            if (!isNaN(quantity) && quantity > 0) {
+                updateQuantity(cartItemId, quantity);
+            }
+        }
+
+        // 从购物车移除商品
+        async function removeFromCart(cartItemId) {
+            utils.confirmAction('确定要删除这个商品吗？', async () => {
+                try {
+                    await window.supabaseService.removeFromCart(cartItemId);
+                    
+                    // 更新本地数据
+                    cartItems = cartItems.filter(item => item.id !== cartItemId);
+                    
+                    if (cartItems.length === 0) {
+                        showEmptyCart();
+                    } else {
+                        displayCartItems();
+                        updateSummary();
+                    }
+                    
+                    await utils.cartUtils.updateCartIcon();
+                    utils.showSuccess('商品已从购物车移除');
+                } catch (error) {
+                    console.error('移除商品失败:', error);
+                    utils.showError('移除商品失败');
+                }
+            });
+        }
+
+        // 更新订单摘要
+        function updateSummary() {
+            totalItems = cartItems.reduce((total, item) => total + item.quantity, 0);
+            totalPrice = cartItems.reduce((total, item) => total + (item.products.price * item.quantity), 0);
+            const shipping = totalPrice > 99 ? 0 : (totalPrice > 0 ? 10 : 0);
+            const total = totalPrice + shipping;
+
+            document.getElementById('totalItems').textContent = totalItems;
+            document.getElementById('subtotal').textContent = utils.formatPrice(totalPrice);
+            document.getElementById('shipping').textContent = shipping === 0 ? '免运费' : utils.formatPrice(shipping);
+            document.getElementById('total').textContent = utils.formatPrice(total);
+        }
+
+        // 结算
+        function proceedToCheckout() {
+            if (cartItems.length === 0) {
+                utils.showError('购物车是空的');
+                return;
+            }
+
+            // 检查库存
+            const outOfStockItems = cartItems.filter(item => item.quantity > item.products.stock_count);
+            if (outOfStockItems.length > 0) {
+                utils.showError('部分商品库存不足，请调整数量后重试');
+                return;
+            }
+
+            // 填充结算表单
+            document.getElementById('checkoutItems').textContent = totalItems;
+            document.getElementById('checkoutTotal').textContent = document.getElementById('total').textContent;
+            
+            // 显示结算模态框
+            document.getElementById('checkoutModal').style.display = 'block';
+        }
+
+        // 关闭结算模态框
+        function closeCheckoutModal() {
+            document.getElementById('checkoutModal').style.display = 'none';
+            document.getElementById('checkoutForm').reset();
+        }
+
+        // 提交订单
+        document.getElementById('checkoutForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                fullName: document.getElementById('fullName').value,
+                phone: document.getElementById('phone').value,
+                address: document.getElementById('address').value
+            };
+            
+            const shippingAddress = `${formData.fullName}, ${formData.phone}, ${formData.address}`;
+            
+            try {
+                const order = await window.supabaseService.createOrder(shippingAddress);
+                
+                utils.showSuccess('订单创建成功！');
+                closeCheckoutModal();
+                
+                // 跳转到订单详情页面（这里简化为跳转到用户中心）
+                setTimeout(() => {
+                    window.location.href = 'profile.html';
+                }, 2000);
+                
+            } catch (error) {
+                console.error('创建订单失败:', error);
+                utils.showError('创建订单失败: ' + error.message);
+            }
+        });
+
+        // 加载推荐商品
+        async function loadRecommendedProducts() {
+            try {
+                const products = await window.supabaseService.getProducts();
+                
+                // 随机选择4个商品作为推荐
+                const recommended = products
+                    .filter(p => !cartItems.some(item => item.product_id === p.id))
+                    .sort(() => Math.random() - 0.5)
+                    .slice(0, 4);
+                
+                if (recommended.length > 0) {
+                    displayRecommendedProducts(recommended);
+                }
+            } catch (error) {
+                console.error('加载推荐商品失败:', error);
+            }
+        }
+
+        // 显示推荐商品
+        function displayRecommendedProducts(products) {
+            document.getElementById('recommendedProducts').style.display = 'block';
+            const container = document.getElementById('recommendedContainer');
+            
+            container.innerHTML = products.map(product => `
+                <div class="product-card" onclick="viewProduct('${product.id}')">
+                    <img src="${product.image_url || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300'}" 
+                         alt="${product.name}" 
+                         class="product-image"
+                         onerror="this.src='https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300'">
+                    <div class="product-info">
+                        <h3 class="product-name">${product.name}</h3>
+                        <p class="product-price">${utils.formatPrice(product.price)}</p>
+                        <button class="btn btn-primary" onclick="event.stopPropagation(); addToCartFromRecommended('${product.id}')">
+                            加入购物车
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 从推荐商品添加到购物车
+        async function addToCartFromRecommended(productId) {
+            try {
+                await utils.cartUtils.addToCart(productId, 1);
+                // 重新加载购物车
+                await loadCart();
+            } catch (error) {
+                console.error('添加到购物车失败:', error);
+            }
+        }
+
+        // 查看商品详情
+        function viewProduct(productId) {
+            window.location.href = `product.html?id=${productId}`;
+        }
+
+        // 显示登录模态框（简化处理）
+        function showLoginModal() {
+            alert('请使用 Supabase Auth 进行登录。实际项目中应该实现完整的登录流程。');
+        }
+
+        // 点击模态框外部关闭
+        window.onclick = function(event) {
+            const checkoutModal = document.getElementById('checkoutModal');
+            if (event.target === checkoutModal) {
+                closeCheckoutModal();
+            }
+        }
+    </script>
+
+    <style>
+        /* 购物车页面特有样式 */
+        .cart-layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .empty-cart {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .empty-cart-content {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .empty-cart h3 {
+            margin: 1rem 0 0.5rem;
+            color: #666;
+        }
+
+        .empty-cart p {
+            color: #999;
+            margin-bottom: 2rem;
+        }
+
+        .cart-item {
+            display: grid;
+            grid-template-columns: 100px 1fr auto auto auto;
+            gap: 1.5rem;
+            align-items: center;
+            padding: 1.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .cart-item:last-child {
+            border-bottom: none;
+        }
+
+        .cart-item-quantity {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .quantity-btn {
+            width: 32px;
+            height: 32px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .quantity-btn:hover:not(:disabled) {
+            background: #f8f9fa;
+        }
+
+        .quantity-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .quantity-input {
+            width: 60px;
+            height: 32px;
+            text-align: center;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .cart-item-total {
+            font-size: 1.1rem;
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .remove-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .remove-btn:hover {
+            background: #c0392b;
+        }
+
+        .cart-summary {
+            position: sticky;
+            top: 100px;
+            height: fit-content;
+        }
+
+        .checkout-btn {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.1rem;
+            margin: 1rem 0;
+        }
+
+        .checkout-modal {
+            max-width: 500px;
+        }
+
+        .order-summary {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+
+        .order-summary h4 {
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .checkout-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 1.5rem;
+        }
+
+        .recommended-products {
+            margin-top: 4rem;
+            border-top: 2px solid #eee;
+            padding-top: 2rem;
+        }
+
+        .recommended-products h2 {
+            margin-bottom: 2rem;
+            font-size: 1.8rem;
+            color: #333;
+        }
+
+        .login-prompt {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .login-prompt .error {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .nav-links .active {
+            color: #e74c3c;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .cart-layout {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .cart-item {
+                grid-template-columns: 80px 1fr;
+                gap: 1rem;
+            }
+
+            .cart-item-info {
+                grid-column: 2;
+            }
+
+            .cart-item-quantity,
+            .cart-item-total,
+            .remove-btn {
+                grid-column: 1 / -1;
+                margin-top: 0.5rem;
+            }
+
+            .cart-summary {
+                position: static;
+            }
+
+            .checkout-actions {
+                flex-direction: column;
+            }
+
+            .checkout-actions .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</body>
+</html>
