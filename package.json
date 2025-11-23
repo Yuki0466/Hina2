@@ -4,6 +4,7 @@
   "description": "电商展示网站 - 使用 Supabase 和 Netlify",
   "main": "index.html",
   "scripts": {
+    "build": "echo 'Static site - no build process required'",
     "serve": "python -m http.server 8080"
   },
   "keywords": ["ecommerce", "supabase", "netlify", "shopping"],
